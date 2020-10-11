@@ -1,155 +1,74 @@
-import re
-import ntpath
+import os
 import logging
-from os.path import splitext
-from math import ceil
-from pandas import DataFrame, read_csv, read_excel, concat
-from numpy import full
 
 
 class DataPack:
-    """The DataPack class manages data to be used in the app by offering basic methods to 
-    manipulate and format data. It makes use of pandas to do so.
-    """
+    """DataPack is a container for 2 types of data: file paths and fileset paths.
+    It manages 2 dictionaries.
+    The first one is {name: path} with name as a short name for the file and path the file path
+    The second one is {name: [paths]} with name as a short name for the fileset and [paths] the list of file paths
+    Then it allows calling files by their shortname or get a list of all files referenced in the 2 dictionaries."""
 
-    def __init__(self, files: dict, dataprocessing: dict):
-        """constructor: it defines the resource files and operations to apply on data. It is possible to chain processings by applying an operation on output data
-        Parameters
+    def __init__(self, files: dict = None, fileset: dict = None, unnamedfiles: list = None):
+        self._files = files if files else dict()
+        self._fileset = fileset if fileset else dict()
+        if unnamedfiles:
+            self.addFiles(unnamedfiles)
+
+    def addFiles(self, files):
+        """add files in DataPack.
         ----------
-        files: resource files in a dictionary. Key id the file name used by dataprocessing to apply operation on the given file. The files are either csv or xls files
-        dataprocessing: operation name and parameters. Examples: 
-
-            processing: dataframe
-            output: data1
-            parameters:
-                sep: '\s+' 
-                skip: 1 
-                file: file1
-
-            processing: split
-            output: table1
-            parameters:
-                cols: 2
-                data: data1
-
-            processing: replaceValues
-            output: data2
-            parameters:
-                data: data2
-                search: "YES"
-                replace: X
-
-            processing: fillna
-            output: data2
-            parameters:
-                data: data2
-                fillwith: ""
-
-            processing: filename
-            output: file1name
-            parameters:
-                file: file1
-
-            processing: format
-            output: data2
-            parameters:
-                data: data2
-                regex: (^.+-[0-9]+)
+        parameters
+        - files: either a single path to the file or a dictionary {name: path} or a list of path
+        when not a dictionary, then the key is the file basename without extension
+        if a key already exist in the files dictioanry, a subscript is applied
         """
-        self.pack = dict()
-        self.files = files
 
-        switcher = {'dataframe': self.getDataFrame, 'fillna': self.fillna,
-                    'split': self.splitDataFrame, 'replaceValues': self.replaceValues, 'table': self.formatDataframe, 'filename':self.filename, 'format': self.format}
+        if type(files) is dict:
+            for name in files:
+                self._files[self._getUniqueName(
+                    name, self._files)] = files[name]
+            return
 
-        for processing in dataprocessing:
-            logging.info("applying processing {}".format(processing['processing']))
-            self.pack[processing['output']] = switcher[processing['processing']](
-                processing['parameters'])
-            logging.info("data {} generated".format(processing['output']))
+        files = [files] if type(files) is not list else files
+        for file in files:
+            name = os.path.splitext(os.path.basename(file))[0]
+            self._files[self._getUniqueName(name, self._files)] = files[name]
 
-    def getDataFrame(self, parameters: dict):
-        sep = parameters['sep'] if 'sep' in parameters else ','
-        skip = parameters['skip'] if 'skip' in parameters else None
-        filename = parameters['file']
+    def addFileSet(self, fileset):
+        """add fileset in DataPack.
+        ----------
+        parameters
+        - fileset: either a list of file paths or a dictionary {name: list of file paths} 
+        when not a dictionary, then the key is "fileset" or "fileset_n" with n as increment to avoid overwriting
+        """
+        if type(fileset) is dict:
+            for name in fileset:
+                self._fileset[self._getUniqueName(
+                    name, self._fileset)] = fileset[name]
+            return
 
-        logging.info("file {} processed".format(filename))
+        self._fileset[self._getUniqueName('fileset', self._fileset)] = fileset
 
-        file = self.files[filename]
-        logging.info('retrieving data from {}'.format(file))
-        _, extension = splitext(file)
-        logging.info(extension)
-        if extension in ['.xls', '.xlsx']:
-            logging.info('read xls file')
-            df = read_excel(file)
-        else:
-            logging.info('read csv file')
-            df = read_csv(file, sep=sep,
-                          skiprows=skip, header=None)
+    def getFileDict(self):
+        """ return the files dictionary"""
+        return self._files
 
-        df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+    def getFilesetDict(self):
+        """return the fileset dictionnary"""
+        return self._fileset
 
-        return df
+    def getFileList(self):
+        """"return the list of all files (files and fileset)"""
+        return [*self._files.values()] + [items for fileset in self._fileset.values() for items in fileset]
 
-    def splitDataFrame(self, parameters: dict):
-        data = self.pack[parameters['data']]
+    def _getUniqueName(self, name, filedict):
+        return name if name not in self._files else self._findName(name, filedict)
 
-        logging.info("data {} to be processed".format(parameters['data']))
-
-        cols = parameters['cols']
-        nb_of_rows = len(data)
-        nb_per_row = ceil(nb_of_rows/cols)
-
-        series = []
-
-        for col in range(0, cols):
-            min_range = col*nb_per_row
-            max_range = min(min_range+nb_per_row-1, nb_of_rows-1)
-            df = data.loc[min_range:max_range]
-            df = df.reset_index(drop=True)
-            series.append(df)
-
-        return concat(series, axis=1)
-
-    def replaceValues(self, parameters: dict):
-        logging.info("data {} processed".format(parameters['data']))
-        return self.pack[parameters['data']].replace(parameters['search'], parameters['replace'])
-
-    def formatDataframe(self, parameters: dict):
-        descriptions = self.formatDescription(parameters['cols'])
-        datacols = []
-        for description in descriptions:
-            dataname = description['dataname']
-            filecol = description['colindex']
-            datacols.append(self.pack[dataname].loc[:, filecol])
-
-        df = concat(datacols, axis=1)
-        df = df.fillna("")
-        df.columns = range(0, df.shape[1])
-        return df
-
-    def formatDescription(self, cols):
-        coldescriptions = []
-        for col in cols:
-            patterns = re.search(r'(.*)\[([0-9]+)\]', col)
-            filename = patterns.group(1)
-            colindex = int(patterns.group(2))
-            coldescriptions.append(
-                {'dataname': filename, 'colindex': colindex})
-        return coldescriptions
-
-    def fillna(self, parameters: dict):
-        return self.pack[parameters['data']].fillna(parameters['fillwith'])
-
-    def filename(self, parameters: dict):
-        file = parameters['file']
-        head, tail = ntpath.split(self.files[file])
-        return tail or ntpath.basename(head)
-
-    def format(self, parameters: dict):
-        regex = parameters['regex']
-        df = self.pack[parameters['data']]
-
-        logging.info("data {} to be processed".format(parameters['data']))
-        return df.replace({regex: r'\1'}, regex=True)
-
+    def _findName(self, name, filedict):
+        index = 0
+        unique_name = '{}_{}'.format(name, index)
+        while unique_name in filedict:
+            index += 1
+            unique_name = '{}_{}'.format(name, index)
+        return unique_name
