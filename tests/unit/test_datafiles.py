@@ -1,9 +1,8 @@
 import unittest
 import os
 import unittest.mock as mock
-# from unittest.mock import patch
 
-from pyDataIP import DataFiles
+from pyDataBank import DataFiles
 
 
 class TestDataFiles(unittest.TestCase):
@@ -47,7 +46,7 @@ class TestDataFiles(unittest.TestCase):
         self.assertCountEqual(files, ['fiLe2_1.txt',
                                       'file1_1.txt', 'file1_2.txt'])
 
-    @mock.patch("pyDataIP.DataFiles._openDialog")
+    @mock.patch("pyDataBank.DataFiles._openDialog")
     def test_open_dialog(self, mock_dialog):
         settings = {
             'dialogs': {

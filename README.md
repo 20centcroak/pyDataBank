@@ -1,110 +1,73 @@
 # pyDataIP
-Import data and format it using a pipeline
+Import resource files by selecting them one by one or in a batch with regex or with open dialog window
+Associate these files or filesets to a key for an easy call
+
+An example of use of both classes is shown below:
+
+    resources = DataFiles(datafiles_settings)
+    datapack = resources.generateDataPack()
+    files_as_dict = datapack.getFileDict()
+    fileset_as_dict = datapack.getFilesetDict()
+    all_files_as_list = datapack.getFileList()
+
+
+Where two examples of datafiles_settings given as a yml file are shown below:
+
+Example1
+
+    files:
+        parent:
+            tip: 'select your jpg file'
+            type: 'jpg"
+        depth: -1
+        caseSensitive: true
+        file1: 'fi.*_1\.txt'
+        file2: 'file2'
+    fileset:
+        parent: "C:/folder2"
+        depth: 0
+        caseSensitive: true
+        texts_set: '.*\.txt'
+        images_set2: .*\.(jpg|png|tif|tiff)
+
+Example2
+
+    dialogs:
+        image:
+            tip: 'provide image file'
+            type: 'png'
+            set: true           # default value is True
+        text:
+            tip: 'provide txt file'
+            type: 'txt'
+            set: false
+            
+The resulting loaded resources due to the "files" section could be:
+
+    files_as_dict = {'file1': 'path/to/file_1.txt', 'file2': 'path/to/myfile2.txt}
+    fileset_as_dict = {'texts_set': ['mydoc.txt'], 'images_set2': ['image1.png', 'image2.jpg']}
+
+And the dialogs settings pops open a dialog box xhich creates a fileset for 'image' and a file dictionary for 'text'
 
 ## DataFiles class
 The DataFiles class manages resource files thanks to 2 dictionaries (files and fileset), one is a key/value per file, 
-the other one is a key/value per file set (a list of files)
+the other one is a key/value per file set (a group of files)
 
 The way resource files are retrieved is based on regex. It uses Finder class of [pyFileFinder](https://pypi.org/project/pyFileFinder/) module to do so.
+It is also possible to request the pop up of an open dialog box to select files. 
 
-It loads the file content into pandas DataFrames.
 
-An example of use of this class is shown below:
+generateDataPack method returns a DataPack object. DataPack will be discussed in the next section.
 
-    resources = DataFiles(parent_folder_path, datafiles_settings)
-    resources.generateDataPack(dataprocessing)
-
-an example of datafiles_settings in yml format is shown below:
-
-    files:
-        file1: ^.*_1_\.txt$
-        file2: ^.*_2\.txt$
-        file3: ^.*_3\.txt$
-    externalfiles:
-        my_ext_file: 
-            type: '.xlsx'
-            tip: open xls file
-    fileset:
-        globalpattern: global.*\.jp.*g$
-            
-
-The resulting loaded resources due to the "files" section will be:
-- file1 (for example file_1.txt)
-- file2 (for example myfile_2.txt)
-- file3 (for example anotherFile_3.txt)
-
-Concerning the external file an open dialog window will be displayed and only files with extension .xlsx will be shown inside.
-When the user has chosen its file, then my_ext_file is defined.
-If there is no need to display an open dialog box, we could replace the externalfiles section with:
-
-    externalfiles:
-        my_ext_file: 
-          ref: myExcelFile.*\.xlsx$
-          in: 'C:\work'
-
-Finally the fileset section loads a list of files based on a regex (all files that comply and are part of the parent folder (with defined depth for subfolders)) will be loaded.
-In the example, the following files could have been loaded:
-- globalFile.jpg
-- globalRendering.jpeg
-- globalOutlook.jpg
-
-generateDataPack method returns a DataPack object. DataPack and dataprocessing will be discussed in the next section.
+See more example in the [test class](https://github.com/20centcroak/pyDataBank/blob/main/tests/unit/test_datafiles.py)
 
 ## DataPack class
-The DataPack class manages data to be used in the app by offering basic methods to manipulate and format data. It makes use of pandas to do so.
-It defines a pipeline starting with the resource on which a sequence of processings are applied.
-It is then possible to chain processings by applying an operation on output data
+The DataPack class is a container for 2 types of data: file paths and fileset paths.
+    It manages 2 dictionaries.
+    The first one is {name: path} with name as a short name for the file and path the file path
+    The second one is {name: [paths]} with name as a short name for the fileset and [paths] the list of file paths
+    Then it allows calling files by their shortname or get a list of all files referenced in the 2 dictionaries.
 
-A DataPack object may be built either by calling :
-
-    pack = Datapack(files, dataprocessing)
-
-or by calling the generateDataPack method of the DataFiles class (see above), files are then the ones loaded when creating the DataFiles object
-
-- "files" settings is a dictionary. Key is the file name used by dataprocessing to apply operation on the given file and value is the pathname of this file. The files are either csv or xls files
-- "dataprocessing" is the operation name and parametersto apply to the resource file. 
-
-dataprocessing examples: 
-
-    # dataframe processing loads the resource file (file1 here) in a DataFrame taking into account the given parameters (see pandas for more information on parameters)
-    # the result is sored in output variable (here data1)
-    processing: dataframe
-    output: data1
-    parameters:
-        sep: '\s+' 
-        skip: 1 
-        file: file1
-
-    # split processing splits the data in n columns. The result is a DataFrame
-    processing: split
-    output: table1
-    parameters:
-        cols: 2
-        data: data1
-
-    # replaceValues processing searches a value ("search") and replace by another ("replace)
-    processing: replaceValues
-    output: data2
-    parameters:
-        data: data2
-        search: "YES"
-        replace: X
-
-    # fillna processing replace NaN values with "fillwith"
-    processing: fillna
-    output: data2
-    parameters:
-        data: data2
-        fillwith: ""
-
-    # get filename (basename of resource file)
-    processing: filename
-    output: file1name
-    parameters:
-        file: file1
-
-    processing: format
-    output: data2
-    parameters:
-        data: data2
-        regex: (^.+-[0-9]+)
+It offers convenient methods to 
+- add files or filesets with or without a short name for these resources. A unique short name is always given to added resources.
+- get files, fileset or the list of all files either contained in files or in fileset
