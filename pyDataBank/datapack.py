@@ -9,11 +9,10 @@ class DataPack:
     The second one is {name: [paths]} with name as a short name for the fileset and [paths] the list of file paths
     Then it allows calling files by their shortname or get a list of all files referenced in the 2 dictionaries."""
 
-    def __init__(self, files: dict = None, fileset: dict = None, unnamedfiles: list = None):
+    def __init__(self, files: dict = None, fileset: dict = None, others: dict = None):
         self._files = files if files else dict()
         self._fileset = fileset if fileset else dict()
-        if unnamedfiles:
-            self.addFiles(unnamedfiles)
+        self._others = others if others else dict()
 
     def addFiles(self, files):
         """add files in DataPack.
@@ -50,6 +49,9 @@ class DataPack:
 
         self._fileset[self._getUniqueName('fileset', self._fileset)] = fileset
 
+    def addOtherSettings(self, others: dict):
+        self._others = {**self._others, **others}
+
     def getFileDict(self):
         """ return the files dictionary"""
         return self._files
@@ -57,6 +59,10 @@ class DataPack:
     def getFilesetDict(self):
         """return the fileset dictionnary"""
         return self._fileset
+
+    def getOthers(self):
+        """ return the others dictionary"""
+        return self._others
 
     def getFileList(self):
         """"return the list of all files (files and fileset)"""

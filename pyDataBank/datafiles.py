@@ -18,12 +18,11 @@ class DataFiles:
         ----------
         settings: a dictionary with optional keys :
             'dialogs':
-                dictionary of (name: dialog box definition), where dialog bow definition is the dictionary 
+                dictionary of (name: dialog box definition), where dialog box definition is the dictionary 
                 with the following key/value pairs that pops up  a dialog box to choose a file.
                     'tip': title of the dialog that will pop open to select the file
                     'type': file extension of the searched file to be used in this dialog:
             'files': dictionary with optional keys:
-                'dialog': dictionary 
                 'parent': parent folder path where resource files should be searched. If none supplied, then parent is the current directory. 
                 'depth' : see pyFileFinder Finder class - depth of recursive search in subfolders. Default value is 0
                 'caseSensitive': see pyFileFinder Finder class - defines is the file search is case sensitive or not
@@ -32,20 +31,17 @@ class DataFiles:
                     If many files comply with the regex, only the first found file is returned
             'fileset': dictionary with optional keys:
                 'parent': parent folder path where resource files should be searched. If none supplied, then parent is the current directory. 
-                    Or if the value is the following dictionary, then an open dialog bow is displayed:
-                    {   'tip': title of the dialog that will pop open to select the file
-                        'type': file extension of the searched file to bu used in this dialog }
                 'depth' : see pyFileFinder Finder class - depth of recursive search in subfolders. Default value is 0
                 'caseSensitive': see pyFileFinder Finder class - defines is the file search is case sensitive or not
                 'definitions':
                     dictionary of (name: regex), each regex defining a pattern to search for multiple files to be associated with the given name in the resulting fileset dictionary
 
+        the residual keys (others than files, fileset and dialogs) are storeD as it in datapak in the others section
+
         here are2 examples of settings given as a yml file:
         Example1 - 
         files:
-            parent:
-                tip: 'select your jpg file'
-                type: 'jpg"
+            parent: "C:/folder"
             depth: -1
             caseSensitive: true
             file1: 'fi.*_1\.txt'
@@ -59,7 +55,7 @@ class DataFiles:
 
         Example2 - 
         dialogs:
-            image:
+            images:
                 tip: 'provide image file'
                 type: 'png'
                 set: true           # default value is True
@@ -67,18 +63,19 @@ class DataFiles:
                 tip: 'provide txt file'
                 type: 'txt'
                 set: false
-
          """
 
         self.datapack = DataPack()
         if 'files' in settings:
-            self._findFiles(settings['files'])
+            self._findFiles(settings.pop('files'))
 
         if 'fileset' in settings:
-            self._findFiles(settings['fileset'], True)
+            self._findFiles(settings.pop('fileset'), True)
 
         if 'dialogs' in settings:
-            self._getDialogFiles(settings['dialogs'])
+            self._getDialogFiles(settings.pop('dialogs'))
+
+        self.datapack.addOtherSettings(settings)
 
     def generatePack(self):
         """create a DataPack object to easily manipulate the found resource files"""

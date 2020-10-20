@@ -24,7 +24,9 @@ class TestDataFiles(unittest.TestCase):
                 'definitions': {
                     'set': r'.*'
                 }
-            }
+            },
+            'mykey1' : 'value1',
+            'mykey2' : [1, 2]
         }
 
         resources = DataFiles(settings)
@@ -45,6 +47,9 @@ class TestDataFiles(unittest.TestCase):
         files = [os.path.basename(file) for file in filelist]
         self.assertCountEqual(files, ['fiLe2_1.txt',
                                       'file1_1.txt', 'file1_2.txt'])
+
+        others = datapack.getOthers()
+        self.assertEqual(others,{'mykey1': 'value1', 'mykey2': [1, 2]})
 
     @mock.patch("pyDataBank.DataFiles._openDialog")
     def test_open_dialog(self, mock_dialog):

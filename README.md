@@ -1,6 +1,7 @@
 # pyDataIP
 Import resource files by selecting them one by one or in a batch with regex or with open dialog window
 Associate these files or filesets to a key for an easy call
+The residual keys (others than files, fileset and dialogs) are stored as it in datapak in the others section
 
 An example of use of both classes is shown below:
 
@@ -9,45 +10,49 @@ An example of use of both classes is shown below:
     files_as_dict = datapack.getFileDict()
     fileset_as_dict = datapack.getFilesetDict()
     all_files_as_list = datapack.getFileList()
+    others = datapack.getOthers()
 
 
 Where two examples of datafiles_settings given as a yml file are shown below:
 
-Example1
+        Example1 - 
+        files:
+            parent: "C:/folder"
+            depth: -1
+            caseSensitive: true
+            file1: 'fi.*_1\.txt'
+            file2: 'file2'
+        fileset:
+            parent: "C:/folder2"
+            depth: 0
+            caseSensitive: true
+            texts_set: '.*\.txt'
+            images_set2: .*\.(jpg|png|tif|tiff)
 
-    files:
-        parent:
-            tip: 'select your jpg file'
-            type: 'jpg"
-        depth: -1
-        caseSensitive: true
-        file1: 'fi.*_1\.txt'
-        file2: 'file2'
-    fileset:
-        parent: "C:/folder2"
-        depth: 0
-        caseSensitive: true
-        texts_set: '.*\.txt'
-        images_set2: .*\.(jpg|png|tif|tiff)
-
-Example2
-
-    dialogs:
-        image:
-            tip: 'provide image file'
-            type: 'png'
-            set: true           # default value is True
-        text:
-            tip: 'provide txt file'
-            type: 'txt'
-            set: false
+        Example2 - 
+        dialogs:
+            images:
+                tip: 'provide image file'
+                type: 'png'
+                set: true           # default value is True
+            text:
+                tip: 'provide txt file'
+                type: 'txt'
+                set: false
+        mykey1: myvalue1
+        mykey2:
+           - item1
+           - item2
             
 The resulting loaded resources due to the "files" section could be:
 
     files_as_dict = {'file1': 'path/to/file_1.txt', 'file2': 'path/to/myfile2.txt}
     fileset_as_dict = {'texts_set': ['mydoc.txt'], 'images_set2': ['image1.png', 'image2.jpg']}
 
-And the dialogs settings pops open a dialog box xhich creates a fileset for 'image' and a file dictionary for 'text'
+The "others" section of databank in example 2 would be:
+    others = {'mykey1' : 'myvalue1', 'mykey2': ['item1', 'item2']}
+
+And the dialogs settings pops open a dialog box which creates a fileset for 'image' and a file dictionary for 'text'
 
 ## DataFiles class
 The DataFiles class manages resource files thanks to 2 dictionaries (files and fileset), one is a key/value per file, 
