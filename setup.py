@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pyDataBank", 
-    version="0.1",
+    version="0.2",
     author="20centCroak",
     author_email="",
     description="module to manage a bunch of resource files using regex or dialogs",
