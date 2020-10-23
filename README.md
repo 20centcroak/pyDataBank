@@ -1,4 +1,4 @@
-# pyDataIP
+# pyDataBank
 Import resource files by selecting them one by one or in a batch with regex or with open dialog window
 Associate these files or filesets to a key for an easy call
 The residual keys (others than files, fileset and dialogs) are stored as it in datapak in the others section
