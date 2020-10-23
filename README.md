@@ -6,7 +6,7 @@ The residual keys (others than files, fileset and dialogs) are stored as it in d
 An example of use of both classes is shown below:
 
     resources = DataFiles(datafiles_settings)
-    datapack = resources.generateDataPack()
+    datapack = resources.generatePack()
     files_as_dict = datapack.getFileDict()
     fileset_as_dict = datapack.getFilesetDict()
     all_files_as_list = datapack.getFileList()
